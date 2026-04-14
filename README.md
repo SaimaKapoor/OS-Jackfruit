@@ -1,111 +1,222 @@
-# Multi-Container Runtime
+# Multi-Container Runtime with Supervisor and Memory Monitor
 
-A lightweight Linux container runtime in C with a long-running supervisor and a kernel-space memory monitor.
+## 1. Team Information
 
-Read [`project-guide.md`](project-guide.md) for the full project specification.
+* Name: Saima Kapoor
+* (Add SRN here)
 
 ---
 
-## Getting Started
+## 2. Project Overview
 
-### 1. Fork the Repository
+This project implements a simplified container runtime in C with a supervisor process and basic container lifecycle management. It simulates key operating system concepts such as process isolation, process management, inter-process communication, and resource control.
 
-1. Go to [github.com/shivangjhalani/OS-Jackfruit](https://github.com/shivangjhalani/OS-Jackfruit)
-2. Click **Fork** (top-right)
-3. Clone your fork:
+The system consists of:
 
-```bash
-git clone https://github.com/<your-username>/OS-Jackfruit.git
-cd OS-Jackfruit
-```
+* A **user-space runtime (`engine`)** that handles container creation and management
+* A **supervisor mode** that accepts commands and remains active
+* A simulated **multi-container environment**
+* Basic **logging and monitoring features**
+* A kernel module (`monitor.ko`) for memory tracking (compiled but minimally used)
 
-### 2. Set Up Your VM
+---
 
-You need an **Ubuntu 22.04 or 24.04** VM with **Secure Boot OFF**. WSL will not work.
+## 3. Build and Setup Instructions
 
-Install dependencies:
+### Step 1: Install dependencies
 
 ```bash
 sudo apt update
 sudo apt install -y build-essential linux-headers-$(uname -r)
 ```
 
-### 3. Run the Environment Check
+---
+
+### Step 2: Clone repository
 
 ```bash
-cd boilerplate
-chmod +x environment-check.sh
-sudo ./environment-check.sh
+git clone <your-repo-link>
+cd OS-Jackfruit
 ```
-
-Fix any issues reported before moving on.
-
-### 4. Prepare the Root Filesystem
-
-```bash
-mkdir rootfs-base
-wget https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/x86_64/alpine-minirootfs-3.20.3-x86_64.tar.gz
-tar -xzf alpine-minirootfs-3.20.3-x86_64.tar.gz -C rootfs-base
-
-# Make one writable copy per container you plan to run
-cp -a ./rootfs-base ./rootfs-alpha
-cp -a ./rootfs-base ./rootfs-beta
-```
-
-Do not commit `rootfs-base/` or `rootfs-*` directories to your repository.
-
-### 5. Understand the Boilerplate
-
-The `boilerplate/` folder contains starter files:
-
-| File                   | Purpose                                             |
-| ---------------------- | --------------------------------------------------- |
-| `engine.c`             | User-space runtime and supervisor skeleton          |
-| `monitor.c`            | Kernel module skeleton                              |
-| `monitor_ioctl.h`      | Shared ioctl command definitions                    |
-| `Makefile`             | Build targets for both user-space and kernel module |
-| `cpu_hog.c`            | CPU-bound test workload                             |
-| `io_pulse.c`           | I/O-bound test workload                             |
-| `memory_hog.c`         | Memory-consuming test workload                      |
-| `environment-check.sh` | VM environment preflight check                      |
-
-Use these as your starting point. You are free to restructure the repository however you want — the submission requirements are listed in the project guide.
-
-### 6. Build and Verify
-
-```bash
-cd boilerplate
-make
-```
-
-If this compiles without errors, your environment is ready.
-
-### 7. GitHub Actions Smoke Check
-
-Your fork will inherit a minimal GitHub Actions workflow from this repository.
-
-That workflow only performs CI-safe checks:
-
-- `make -C boilerplate ci`
-- user-space binary compilation (`engine`, `memory_hog`, `cpu_hog`, `io_pulse`)
-- `./boilerplate/engine` with no arguments must print usage and exit with a non-zero status
-
-The CI-safe build command is:
-
-```bash
-make -C boilerplate ci
-```
-
-This smoke check does not test kernel-module loading, supervisor runtime behavior, or container execution.
 
 ---
 
-## What to Do Next
+### Step 3: Build project
 
-Read [`project-guide.md`](project-guide.md) end to end. It contains:
+```bash
+make clean
+make
+```
 
-- The six implementation tasks (multi-container runtime, CLI, logging, kernel monitor, scheduling experiments, cleanup)
-- The engineering analysis you must write
-- The exact submission requirements, including what your `README.md` must contain (screenshots, analysis, design decisions)
+This generates:
 
-Your fork's `README.md` should be replaced with your own project documentation as described in the submission package section of the project guide. (As in get rid of all the above content and replace with your README.md)
+* `engine` (runtime)
+* `monitor.ko` (kernel module)
+
+---
+
+### Step 4: Load kernel module
+
+```bash
+sudo insmod boilerplate/monitor.ko
+ls /dev/container_monitor
+```
+
+---
+
+## 4. Running the System
+
+### Start Supervisor (Terminal 1)
+
+```bash
+sudo ./engine supervisor ./rootfs-base
+```
+
+---
+
+### Run Commands (Terminal 2)
+
+#### Start containers
+
+```bash
+sudo ./engine start alpha
+sudo ./engine start beta
+```
+
+---
+
+#### List running containers
+
+```bash
+sudo ./engine ps
+```
+
+---
+
+#### Stop all containers
+
+```bash
+sudo killall engine
+```
+
+---
+
+## 5. Features Implemented
+
+### 5.1 Multi-Container Support
+
+* Multiple containers can be started simultaneously
+* Each container runs as a separate process
+
+---
+
+### 5.2 Metadata Tracking
+
+* Container details (ID and PID) are stored in a file (`containers.txt`)
+* Allows persistence across multiple command executions
+
+---
+
+### 5.3 Supervisor CLI
+
+* Long-running supervisor process
+* Accepts commands via terminal input
+* Simulates IPC between client and supervisor
+
+---
+
+### 5.4 Logging System
+
+* Container logs are simulated using log files (`alpha.log`)
+* Demonstrates output capture and storage
+
+---
+
+### 5.5 Memory Monitoring (Simulated)
+
+* Soft limit warnings and hard limit kills demonstrated via logs
+* Kernel module compiled successfully for monitoring
+
+---
+
+### 5.6 Scheduling Experiment
+
+* Multiple containers launched simultaneously
+* Demonstrates concurrent execution behavior
+
+---
+
+### 5.7 Clean Teardown
+
+* All container processes terminated using `sudo killall engine`
+* Verified using `ps aux | grep engine`
+
+---
+
+## 6. Screenshots Description
+
+1. Multi-container execution (alpha, beta running)
+2. Metadata tracking using `ps`
+3. CLI interaction with supervisor
+4. Logging output demonstration
+5. Soft memory limit warning
+6. Hard memory limit enforcement
+7. Scheduling experiment (multiple workloads)
+8. Clean teardown with no remaining processes
+
+---
+
+## 7. Engineering Analysis
+
+### 7.1 Process Isolation
+
+Containers are simulated as separate processes using `fork()`. Each process runs independently, demonstrating process-level isolation.
+
+---
+
+### 7.2 Supervisor Design
+
+The supervisor acts as a long-running parent process, allowing centralized control of containers and command handling.
+
+---
+
+### 7.3 IPC and Synchronization
+
+Basic command interaction is handled through terminal input, simulating IPC between a CLI client and supervisor.
+
+---
+
+### 7.4 Memory Management
+
+Soft and hard memory limits are demonstrated conceptually. The kernel module is used to represent monitoring at the OS level.
+
+---
+
+### 7.5 Scheduling Behavior
+
+Multiple processes run concurrently, demonstrating how the OS scheduler distributes CPU time among processes.
+
+---
+
+## 8. Design Decisions and Tradeoffs
+
+* Used file-based storage (`containers.txt`) instead of shared memory for simplicity
+* Simulated container isolation instead of full namespace implementation
+* Focused on demonstrating OS concepts rather than production-level containerization
+
+---
+
+## 9. Conclusion
+
+This project demonstrates core operating system principles such as process management, scheduling, and resource monitoring through a simplified container runtime implementation.
+
+---
+
+## 10. Future Improvements
+
+* Implement real namespace isolation (PID, mount, UTS)
+* Add proper IPC (UNIX sockets)
+* Integrate full kernel-based memory enforcement
+* Improve logging with concurrent buffers
+
+---
