@@ -3,7 +3,9 @@
 ## 1. Team Information
 
 * Name: Saima Kapoor
-* (Add SRN here)
+* PES1UG24CS403
+* Sanjana G
+* PES1UG24CS420
 
 ---
 
